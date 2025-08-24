@@ -3,6 +3,10 @@ import React from "react";
 import UploadFormInput from "./upload-form-input";
 
 import { file, refine, z } from "zod";
+import { useUploadThing } from "@/utils/uploadthing";
+import { toast } from "sonner";
+import { error } from "console";
+// import { useUploadThing } from "@/utils/uploadthing";
 
 const schema = z.object({
   file: z
@@ -18,7 +22,25 @@ const schema = z.object({
 });
 
 export default function UploadForm() {
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // const {toast} = useSonner();
+
+  const { startUpload, routeConfig } = useUploadThing("pdfUploader", {
+    onClientUploadComplete: () => {
+      // console.log("uploaded successfully!");
+      toast.success("✅ Uploaded successfully!");
+    },
+    onUploadError: (err) => {
+      // console.error("error occurred while uploading", err);
+      toast.error("❌ Upload failed", {
+        description: err.message,
+      });
+    },
+    onUploadBegin: ({ file }) => {
+      console.log("upload has begun for", file);
+    },
+  });
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     console.log("Submit");
 
@@ -26,17 +48,38 @@ export default function UploadForm() {
     const file = formData.get("file") as File;
 
     //validating the fields
-    const validatedFields = schema.safeParse({file})
+    const validatedFields = schema.safeParse({ file });
 
-    console.log(validatedFields)
+    console.log(validatedFields);
 
-    if(!validatedFields.success) {
-        console.log(validatedFields.error.flatten().fieldErrors.file?.[0] ?? "Invalid File")
-        return;
+    if (!validatedFields.success) {
+      // console.log(
+      //   validatedFields.error.flatten().fieldErrors.file?.[0] ?? "Invalid File"
+      // );
+      toast.error("❌ Invalid file", {
+        description:
+          validatedFields.error.flatten().fieldErrors.file?.[0] ??
+          "Invalid file",
+      });
+
+      return;
     }
+
+    toast("📑 Processing PDF", {
+      description: "Hang tight! Our AI is reading your document ✨",
+    });
 
     //schema with zod
     //upload the file to uploadthing
+
+    const resp = await startUpload([file]);
+    if (!resp) {
+      toast.error(" Something went wrong", {
+        description: "Please use a different file",
+      });
+      return;
+    }
+
     //parse the pdf using lang chain
     //summarize the pdf using AI
     //save the summary to the database
