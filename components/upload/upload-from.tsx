@@ -6,6 +6,7 @@ import { file, refine, z } from "zod";
 import { useUploadThing } from "@/utils/uploadthing";
 import { toast } from "sonner";
 import { error } from "console";
+import generatePdfSummary from "@/actions/upload-action";
 // import { useUploadThing } from "@/utils/uploadthing";
 
 const schema = z.object({
@@ -25,20 +26,20 @@ export default function UploadForm() {
   // const {toast} = useSonner();
 
   const { startUpload, routeConfig } = useUploadThing("pdfUploader", {
-    onClientUploadComplete: () => {
-      // console.log("uploaded successfully!");
-      toast.success("✅ Uploaded successfully!");
-    },
-    onUploadError: (err) => {
-      // console.error("error occurred while uploading", err);
-      toast.error("❌ Upload failed", {
-        description: err.message,
-      });
-    },
-    onUploadBegin: ({ file }) => {
-      console.log("upload has begun for", file);
-    },
-  });
+  onClientUploadComplete: () => {
+    toast.success("✅ Uploaded successfully!");
+  },
+  onUploadError: (err) => {
+    toast.error("❌ Upload failed", {
+      description: err.message,
+    });
+  },
+  onUploadBegin: () => {
+    console.log("Upload has begun");
+  },
+});
+
+
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -81,6 +82,8 @@ export default function UploadForm() {
     }
 
     //parse the pdf using lang chain
+    const summary = await generatePdfSummary(resp);
+    console.log({summary})
     //summarize the pdf using AI
     //save the summary to the database
     //redirect to the [id] summary page
